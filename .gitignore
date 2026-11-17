@@ -73,3 +73,12 @@ _control_smoke
 *.zip
 *.tar
 *.tar.gz
+
+# Stage 4 local full-sequence replay data / codec telemetry
+/stage4_runs/
+/stage4_work/
+/rl_env_runs/
+rollout_*/
+*.encoder.stderr.txt
+*.decode.stdout.txt
+*.prepare.json

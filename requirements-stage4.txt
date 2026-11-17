@@ -1,0 +1,9 @@
+# Python dependencies for Stage 4 replay smoke environment.
+# Install tested/compatible versions in your Kaggle or local runtime and record
+# precise package lock in experiment metadata; these are MINIMUMS, not a lock.
+numpy>=1.24
+opencv-python-headless>=4.8
+gymnasium>=0.29
+torch>=2.0
+# Local Git checkout of ultralytics/yolov5 + locally downloaded yolov5n.pt
+# required; weights/dataset are deliberately NOT included in this repo.
