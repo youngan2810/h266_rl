@@ -1,0 +1,15 @@
+{
+  "mode": "real_codec_full_sequence_replay_NOT_online",
+  "encoder": "/path/to/modified/vvencapp",
+  "decoder": "/path/to/vvdecapp",
+  "yuv": "/path/to/one_training_video_480x320_yuv420p_8bit.yuv",
+  "yolov5_repo": "/path/to/local/yolov5",
+  "weights": "/path/to/private/yolov5n.pt",
+  "fps": 30,
+  "target_bitrate": 300000,
+  "detector_confidence": 0.25,
+  "detector_nms_iou": 0.45,
+  "task_matching_iou": 0.5,
+  "reward_lambda": 20.0,
+  "validation_status": "no_VVenC_VVdeC_YOLO_end_to_end_test_completed"
+}

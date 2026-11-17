@@ -169,3 +169,11 @@ This pilot reserves process `stdin` for actions: **the input YUV must be a file*
 - [RL-RC-DoT, CVPR 2025](https://openaccess.thecvf.com/content/CVPR2025/html/Gadot_RL-RC-DoT_A_Block-level_RL_agent_for_Task-Aware_Video_Compression_CVPR_2025_paper.html)
 - [Fraunhofer HHI VVenC](https://github.com/fraunhoferhhi/vvenc)
 - [Fraunhofer HHI VVdeC](https://github.com/fraunhoferhhi/vvdec)
+
+## Stage 4 development branch (WIP, not PPO-ready)
+
+The `feature/stage4-rl-environment` branch adds the reward unit and a **real-codec full-sequence replay validation backend** under `src/rl_env/`. This is a transparent validation fallback, **not** an online frame-synchronous encoder environment. Each `step()` re-encodes and re-decodes the complete clip using the chosen action prefix and zero-valued future actions; complexity is quadratic in episode length, and hierarchical GOP dependencies can cause rewards for earlier display POCs to change when later actions are chosen. **Do not start PPO on replay trajectories.**
+
+Install the Stage 4 dependencies in a separate environment using `requirements-stage4.txt`. Prepare a short training/validation clip with `scripts/prepare_bdd_video.py`, build the pinned VVenC Stage 3 overlay, and provide a working VVdeC binary and local YOLOv5n repository/checkpoint. Run the real end-to-end smoke with `scripts/run_stage4_smoke.py --help`; parameters must be specified explicitly. Reference results are unavailable until the smoke test succeeds on the real software stack.
+
+The mathematical reward implements the published log-rate term and λ=20. The task term uses confidence-ordered, one-to-one car IoU association to produce a pseudo-label precision score, an **explicit implementation choice** because the original paper does not completely specify detection association/empty-detection conventions. Empty detections fail closed and must be resolved before a training policy is configured. See `docs/STAGE4.md` for exact limitations, run commands, and validation gates.
