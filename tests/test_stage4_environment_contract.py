@@ -36,7 +36,7 @@ class _FakeBackend:
         self.count+=1
         self.commands.append(dict(actions))
         stream=self.workdir/f'out{self.count}.266'
-        stream.write_bytes(b'fake_fixture')
+        stream.write_bytes(b'fixture_'+str(sorted((p,d) for p,d in actions.items() if d != 0)).encode('ascii'))
         recpath=self.workdir/f'rec{self.count}.yuv';recpath.write_bytes(b'fake_fixture')
         ob0=np.zeros(11,dtype=np.float32)
         ob1=np.zeros(11,dtype=np.float32);ob1[1]=float(actions.get(0,0))
@@ -45,6 +45,10 @@ class _FakeBackend:
         for poc in (0,1):
             records.append({'kind':'picture_action','poc':poc,'qp_native':30,
                             'qp_accepted':30+actions.get(poc,0)})
+            records.append({'kind':'coding_qp','poc':poc,'cu_count':2,
+                            'qp_min':30+actions.get(poc,0),
+                            'qp_max':30+actions.get(poc,0),
+                            'qp_mean_unweighted':30+actions.get(poc,0)})
         return SimpleNamespace(observations=observations,records=records,
              bits_by_poc={0:100,1:200},reconstructed=_SyntheticFrame(recpath),
              output_266=stream,encode_seconds=.01,decode_seconds=.01)

@@ -19,6 +19,8 @@ Real 480x320 YUV420p sequence
   -> next pre-action VVenC state as emitted in the same full-clip replay.
 ```
 
+**Safety gates:** the real-codec runner fails if finalized `coding_qp` events for any POC are absent. For ΔQP=0, the new bitstream must match a replay with the identical action history byte-for-byte. For an accepted nonzero ΔQP, the bitstream and CU-QP summary must differ from its immediate zero-action replay. These are conservative local checks; they do not replace VVdeC conformance and full coded-QP instrumentation.
+
 **Execution caveat:** `FullSequenceReplay.run()` encodes **all frames in a continuous sequence** on every invocation. All actions chosen so far are replayed; unknown future actions default to ΔQP=0. This is **not** a live online single-encode `step()`! It preserves reference-frame operation *inside* each full-clip encoding but incurs O(T²) work, and earlier reconstructed frames can depend on future coding-order references / their QPs. For future PPO, a persistent AU-level synchronous bridge with proper POC-keyed delayed rewards and real decoder output is required.
 
 The 5-return Gymnasium adapter `VVCReplayEnv` exists only for integration exploration. Its declaration does **not** mean the environment is suitable for PPO; neither RL training nor PPO network has been implemented.

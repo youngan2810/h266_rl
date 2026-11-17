@@ -6,6 +6,7 @@ hierarchical GOP prediction. Do not feed PPO with these trajectories until
 this limitation is resolved and true synchronous AU-level interaction exists.
 """
 import json
+import hashlib
 from dataclasses import asdict
 from pathlib import Path
 import time
@@ -14,6 +15,14 @@ import numpy as np
 from scripts.state_schema import action_from_policy_index
 from .reward import compose_reward,current_average_bitrate,precision_proxy,InvalidReward
 from .runner import FullSequenceReplay,CodecFailure
+
+
+def _sha256_file(path):
+    digest=hashlib.sha256()
+    with path.open('rb') as f:
+        for chunk in iter(lambda:f.read(1024*1024),b''):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 try:
     import gymnasium as gym
@@ -77,6 +86,18 @@ class _ReplayEnv:
         scores=compose_reward(rate,self.backend.settings.target_bitrate,precision,self.reward_lambda)
         reward_seconds=time.perf_counter()-t_reward
         applied=next(x for x in updated.records if x.get('kind')=='picture_action' and x.get('poc')==poc)
+        prior_qp=next(x for x in previous.records if x.get('kind')=='coding_qp' and x.get('poc')==poc)
+        after_qp=next(x for x in updated.records if x.get('kind')=='coding_qp' and x.get('poc')==poc)
+        prior_bitstream=_sha256_file(previous.output_266)
+        after_bitstream=_sha256_file(updated.output_266)
+        if delta==0 and prior_bitstream!=after_bitstream:
+            raise CodecFailure('identical action plan produced differing VVC bitstreams; replay is non-deterministic')
+        if applied['qp_accepted']!=applied['qp_native']:
+            if prior_bitstream==after_bitstream:
+                raise CodecFailure('nonzero accepted QP action produced unchanged bitstream')
+            keys=('qp_min','qp_max','qp_mean_unweighted')
+            if all(prior_qp[k]==after_qp[k] for k in keys):
+                raise CodecFailure('nonzero accepted QP action produced no detectable coded-CU QP change')
         self.current=updated;self.index+=1
         self.terminated=self.index>=len(self.order)
         next_ob=np.zeros(11,dtype=np.float32) if self.terminated else updated.observations[self.index][1].copy()

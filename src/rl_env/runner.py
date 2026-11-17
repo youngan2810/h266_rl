@@ -7,6 +7,7 @@ NOT true online one-picture step and NOT suitable for scalable PPO yet.
 from dataclasses import dataclass
 from pathlib import Path
 import json
+import math
 import os
 import subprocess
 import threading
@@ -139,7 +140,7 @@ class FullSequenceReplay:
         bitstream=directory/'out.266';logfile=directory/'control.jsonl'
         observations,encode_seconds=self._encode(actions,bitstream,logfile)
         rows=_read_jsonl_strict(logfile)
-        acts={}; feedback={}; slices={}; observed=set();seen_feedback=set()
+        acts={}; feedback={}; slices={}; coded_qp={}; observed=set();seen_feedback=set()
         for row in rows:
             kind=row.get('kind');poc=row.get('poc')
             if kind=='observation':
@@ -151,6 +152,17 @@ class FullSequenceReplay:
                 acts[poc]=row
             elif kind=='slice_qp':
                 slices[poc]=row
+            elif kind=='coding_qp':
+                if poc in coded_qp:raise CodecFailure('duplicate coding_qp summary')
+                if type(row.get('cu_count')) is not int or row['cu_count']<=0:
+                    raise CodecFailure('invalid CU coding count')
+                try:
+                    finite=math.isfinite(float(row['qp_mean_unweighted']))
+                    valid_bounds=row['qp_min']<=row['qp_max']
+                except (KeyError,TypeError,ValueError):
+                    raise CodecFailure('malformed coding_qp summary')
+                if not finite or not valid_bounds:raise CodecFailure('invalid coded QP statistics')
+                coded_qp[poc]=row
             elif kind=='feedback':
                 if poc in feedback:raise CodecFailure('duplicate completed picture feedback')
                 if type(row.get('actual_bits')) is not int or row['actual_bits']<0:
@@ -159,6 +171,8 @@ class FullSequenceReplay:
         if set(acts)!=set(range(self.n)) or set(feedback)!=set(range(self.n)):
             raise CodecFailure('missing per-POC picture action / actual bits; cannot compute reward')
         if not set(slices).issuperset(acts):raise CodecFailure('missing post-QPA slice QP trace')
+        if set(coded_qp)!=set(range(self.n)):
+            raise CodecFailure('missing actual coded-CU QP summary: cannot verify action effect')
         for poc,row in acts.items():
             ob=next(item for item,_ in observations if item['poc']==poc)
             d=actions.get(poc,0)
