@@ -61,6 +61,7 @@ PYTHONPATH=src:. python scripts/run_stage4_smoke.py \
 
 - [x] Deterministic math unit tests for rate reward, car precision and invalid inputs (run locally).
 - [x] Strict YUV420 file/shape unit tests (run locally).
+- [x] Mock-backed Python `reset()`/`step()` lifecycle contract tests (run locally; **NOT** real codec/detector tests).
 - [x] Stage 3 standalone Python/C++ tests (run locally).
 - [ ] Compiled patched VVenC (not available in this environment).
 - [ ] Stage 3 noop/constant/spatial action codec smoke (not available).
